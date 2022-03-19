@@ -111,6 +111,24 @@ namespace GherkinNet.Tests
             errors.Should().HaveCount(1);
             errors.First().Message.Should().Contain("should have the same parameter count");
         }
+
+        [Fact(DisplayName = "Given an expression with right parameter count when validating nothing is yield")]
+        [Trait("binding", "validation")]
+        public static void binding_right_parameter_count_yields_nothing_validation()
+        {
+            string example = " given should be something";
+
+            var shouldbe_method = typeof(BinderHelperSpecification)
+                .GetMethod(nameof(ShouldBe), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+
+            var binding = BindingHelper.FromMethod(Nouns.given, "should be (.*)", shouldbe_method);
+
+            var dom = GherkinParser.Parse(example, new[] { binding! });
+            var errors = dom.Validate();
+
+            errors.Should().BeEmpty();
+        }
+
         static void ShouldBe(string something) { }
 
     }
