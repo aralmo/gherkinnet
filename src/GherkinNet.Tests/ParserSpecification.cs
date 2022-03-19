@@ -9,6 +9,7 @@ using System.IO;
 using FluentAssertions;
 using GherkinNet.Language.Nodes;
 using System.Threading;
+using GherkinNet.Language.Binding;
 
 namespace GherkinNet.Tests
 {
@@ -249,8 +250,8 @@ namespace GherkinNet.Tests
             nodes.Should().AllBeOfType<BindedSentence>();
             nodes.Should().HaveCount(3);
 
-            nodes.Select<Node, BindedSentence>(n => n as BindedSentence).Should()
-                .AllSatisfy(node => node.Binder.Noun.Should().Be((node.Parent as NounNode).Noun));
+            nodes.Select<Node, BindedSentence>(n => (n as BindedSentence)!).Should()
+                .AllSatisfy(node => node.Binder.Noun.Should().Be((node.Parent as NounNode)!.Noun));
 
         }
     }

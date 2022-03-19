@@ -1,4 +1,5 @@
-﻿using GherkinNet.Language.Nodes;
+﻿using GherkinNet.Language.Binding;
+using GherkinNet.Language.Nodes;
 using System;
 using System.Collections.Generic;
 using System.IO;
