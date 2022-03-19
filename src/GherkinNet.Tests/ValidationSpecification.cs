@@ -12,7 +12,7 @@ namespace GherkinNet.Tests
 {
     public class ValidationSpecification
     {
-        [Fact(DisplayName = "feature and scenario sections should have a name")]
+        [Fact(DisplayName = "feature and scenario sections should have a title")]
         [Trait("language", "validation")]
         public void given_feature_with_no_name_should_validate()
         {
@@ -35,6 +35,26 @@ namespace GherkinNet.Tests
             
             errors.Last().Node.Should().Be(dom.Nodes[5]);
             errors.Last().Message.Should().Contain("should have a title");
+        }
+
+        [Fact(DisplayName = "background section should not need a title")]
+        [Trait("language", "validation")]
+        public void background_should_not_require_title()
+        {
+            string example
+                = @"
+                    feature: f
+                        this is just text
+                        more explanatory text                    
+                        yet more comments   
+                    background: some title
+                    scenario: valid one
+                    background:
+                   ";
+
+            var dom = GherkinParser.Parse(new StringReader(example));
+            var errors = dom.Validate();
+            errors.Should().BeEmpty();
         }
     }
 }

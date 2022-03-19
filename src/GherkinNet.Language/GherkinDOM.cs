@@ -16,8 +16,13 @@ namespace GherkinNet.Language
 
             foreach (var node in Nodes)
             {
-                if (node is SectionNode section && string.IsNullOrEmpty(section.Title))
-                    yield return new ValidationResult(node, $"{section.Type} should have a title");
+                switch (node)
+                {
+                    case SectionNode section:
+                        foreach (var r in NodeRules.SectionRules(section))
+                            yield return r;
+                    break;
+                }
             }
         }
 

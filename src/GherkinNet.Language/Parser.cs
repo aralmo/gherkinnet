@@ -102,7 +102,7 @@ namespace GherkinNet.Language
                 {
                     SourceIndex = match.Groups[1].Index + posOffset,
                     SourceLength = match.Groups[1].Length,
-                    Type = match.Groups[1].Value.Remove(match.Groups[1].Length - 1, 1),//remove the : from the  feature type
+                    Type =(Sections) Enum.Parse(typeof(Sections), match.Groups[1].Value.Remove(match.Groups[1].Length - 1, 1)),//remove the : from the  feature type
                     Title = match.Groups[2].Value.Trim(),
                 };
 

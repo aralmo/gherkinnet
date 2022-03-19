@@ -56,6 +56,36 @@ namespace GherkinNet.Tests
             dom.Nodes.Skip(1).Should().AllSatisfy(node => node.Parent.Should().Be(dom.Nodes[0]));
         }
 
+        [Fact(DisplayName = "Parsing an incomplete noun returns a noun without sentence")]
+        [Trait("language", "parser")]
+        public void should_get_a_noun_withouth_statement()
+        {
+            string example
+                = @"
+                    scenario: some
+                        when 
+                   ";
+
+            var dom = GherkinParser.Parse(new StringReader(example));
+            dom.Nodes[1].Should().BeOfType<NounNode>();
+            (dom.Nodes[1] as NounNode)!.Sentence.Should().BeNull();
+        }
+
+        [Fact(DisplayName = "Parsing a noun statement inside a feature should return textnode")]
+        [Trait("language", "parser")]
+        public void parsing_inside_feature_should_return_textnode()
+        {
+            string example
+                = @"
+                    feature: some feature
+                        when i write this
+                        then should get textnodes instead
+                   ";
+
+            var dom = GherkinParser.Parse(new StringReader(example));
+            dom.Nodes.Skip(1).Should().AllBeOfType<TextNode>();
+        }
+
         [Fact(DisplayName = "Parse parents multiple features with children")]
         [Trait("language", "parser")]
         public void given_two_sections_parenting_is_correct()
