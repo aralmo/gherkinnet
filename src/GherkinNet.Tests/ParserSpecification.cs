@@ -24,7 +24,7 @@ namespace GherkinNet.Tests
                     scenario: scenario name
                    ";
 
-            var dom = GherkinParser.Parse(new StringReader(example));
+            var dom = GherkinParser.Parse(example);
             dom.Nodes.Count().Should().Be(3);
             dom.Nodes.Should().AllBeOfType<SectionNode>();
 
@@ -66,7 +66,7 @@ namespace GherkinNet.Tests
                         when 
                    ";
 
-            var dom = GherkinParser.Parse(new StringReader(example));
+            var dom = GherkinParser.Parse(example);
             dom.Nodes[1].Should().BeOfType<NounNode>();
             (dom.Nodes[1] as NounNode)!.Sentence.Should().BeNull();
         }
@@ -93,7 +93,7 @@ namespace GherkinNet.Tests
             string example
                = @"when we parse this";
 
-            var dom = GherkinParser.Parse(new StringReader(example));
+            var dom = GherkinParser.Parse(example);
             dom.Nodes.Should().HaveCount(2);
             dom.Nodes.First().Should().BeOfType<NounNode>();
             dom.Nodes.Last().Should().BeOfType<PendingSentence>();
@@ -114,7 +114,7 @@ namespace GherkinNet.Tests
                         then something else should happen                        
                    ";
 
-            var dom = GherkinParser.Parse(new StringReader(example));
+            var dom = GherkinParser.Parse(example);
 
             //we don't care of the nouns decomposed nodes for this test
             var nodes = dom.Nodes.Where(x => x is SectionNode || x is NounNode).ToArray();
@@ -144,7 +144,7 @@ namespace GherkinNet.Tests
                         given something
                         given something else        
                    ";
-            var dom = GherkinParser.Parse(new StringReader(example));
+            var dom = GherkinParser.Parse(example);
             var nodes = dom.Nodes;
 
             nodes[0].Should().BeOfType<SectionNode>();

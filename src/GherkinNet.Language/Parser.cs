@@ -15,14 +15,25 @@ namespace GherkinNet.Language
         const string SECTIONS_REGEX = @"(?:\s*)?(background:|scenario:|feature:)(.*)(\r|\n)?";
         const string NOUNS_REGEX = @"(?:\s*)?(given|when|then) (.*)(\r|\n)?";
 
-        public static GherkinDOM Parse(string content, CancellationToken? cancellationToken = null)
-            => Parse(new StreamReader(content));
+        public static GherkinDOM Parse(string content)
+            => Parse(new StringReader(content));
 
         public static GherkinDOM Parse(TextReader reader)
             => new GherkinDOM()
             {
                 Nodes = ParseLines(reader).ToArray()
             };
+
+        public static async Task<GherkinDOM> ParseAsync(TextReader reader, CancellationToken? cancellationToken = null)
+        {
+            var nodes = await Task.Run(() => 
+                ParseLines(reader, cancellationToken).ToArray(),cancellationToken??default(CancellationToken));
+
+            return new GherkinDOM()
+            {
+                Nodes = nodes
+            };
+        }
 
         static IEnumerable<Node> ParseLines(TextReader reader, CancellationToken? cancellationToken = null)
         {            
