@@ -14,7 +14,7 @@ namespace GherkinNet.Tests
     public class ParserSpecification
     {
         [Fact(DisplayName = "Parse basic sections without content")]
-        [Trait("language","parser")]
+        [Trait("language", "parser")]
         public void given_some_sections_parser_should_return_dom()
         {
             string example
@@ -86,6 +86,19 @@ namespace GherkinNet.Tests
             dom.Nodes.Skip(1).Should().AllBeOfType<TextNode>();
         }
 
+        [Fact(DisplayName = "Parsing one line noun yields correct")]
+        [Trait("language", "parser")]
+        public void parsing_only_noun_yields_correct()
+        {
+            string example
+               = @"when we parse this";
+
+            var dom = GherkinParser.Parse(new StringReader(example));
+            dom.Nodes.Should().HaveCount(2);
+            dom.Nodes.First().Should().BeOfType<NounNode>();
+            dom.Nodes.Last().Should().BeOfType<PendingSentence>();
+        }
+
         [Fact(DisplayName = "Parse parents multiple features with children")]
         [Trait("language", "parser")]
         public void given_two_sections_parenting_is_correct()
@@ -102,10 +115,10 @@ namespace GherkinNet.Tests
                    ";
 
             var dom = GherkinParser.Parse(new StringReader(example));
-            
+
             //we don't care of the nouns decomposed nodes for this test
-            var nodes = dom.Nodes.Where(x => x is SectionNode || x is NounNode).ToArray(); 
-            
+            var nodes = dom.Nodes.Where(x => x is SectionNode || x is NounNode).ToArray();
+
             nodes.Count().Should().Be(6);//this noun should have 2 each expressions
 
             nodes[0].Should().BeOfType<SectionNode>();

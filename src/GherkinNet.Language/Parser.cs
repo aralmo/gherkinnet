@@ -39,11 +39,13 @@ namespace GherkinNet.Language
                     else
                     {
                         bool isnoun = false;
-                        foreach (var node in parseNoun(line, pos, section))
-                        {
-                            isnoun = true;
-                            yield return node;
-                        }
+                        //features only accept text
+                        if (section?.Type != Sections.feature)
+                            foreach (var node in parseNoun(line, pos, section))
+                            {
+                                isnoun = true;
+                                yield return node;
+                            }
 
                         if (!isnoun)
                             yield return new TextNode()
@@ -84,7 +86,6 @@ namespace GherkinNet.Language
                     yield return noun.Sentence;
             }
         }
-
         static void parseAndBindNounSentence(int posOffset, NounNode noun, Match match)
         {
             var sentence = new PendingSentence()
@@ -96,7 +97,6 @@ namespace GherkinNet.Language
             };
             noun.Sentence = sentence;
         }
-
         private static bool tryParseSection(string line, int posOffset, out SectionNode section)
         {
             var match = Regex.Match(line, SECTIONS_REGEX);
