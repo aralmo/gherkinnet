@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GherkinNet.Language
@@ -14,18 +15,21 @@ namespace GherkinNet.Language
         const string SECTIONS_REGEX = @"(?:\s*)?(background:|scenario:|feature:)(.*)(\r|\n)?";
         const string NOUNS_REGEX = @"(?:\s*)?(given|when|then) (.*)(\r|\n)?";
 
+        public static GherkinDOM Parse(string content, CancellationToken? cancellationToken = null)
+            => Parse(new StreamReader(content));
+
         public static GherkinDOM Parse(TextReader reader)
             => new GherkinDOM()
             {
                 Nodes = ParseLines(reader).ToArray()
             };
 
-        static IEnumerable<Node> ParseLines(TextReader reader)
-        {
+        static IEnumerable<Node> ParseLines(TextReader reader, CancellationToken? cancellationToken = null)
+        {            
             SectionNode section = null;
             string line = reader.ReadLine();
             int pos = 0;
-            while (line != null)
+            while (line != null && (cancellationToken?.IsCancellationRequested ?? false) == false)
             {
                 //ignore empty and whitespace lines
                 if (!string.IsNullOrWhiteSpace(line))
