@@ -20,11 +20,11 @@ namespace GherkinNet.Language.Validation
             //all nouns should have a sentence
             if (node.Sentence == null)
                 yield return new ValidationResult(node, $"'{node.Noun}' should have a sentence");
-
         }
 
         internal static IEnumerable<ValidationResult> BindedSentenceRules(BindedSentence sentence)
         {
+            //validate the regex is correct format and the parameter counts match
             string error = null;
             Regex regex = null;
             try
