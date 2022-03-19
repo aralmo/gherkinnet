@@ -12,5 +12,7 @@ namespace GherkinNet.Language.Binding
     {
         public Nouns Noun;
         public string RegularExpression;
+        public string[] ParameterNames;
+        public Type[] ParameterTypes;
     }
 }

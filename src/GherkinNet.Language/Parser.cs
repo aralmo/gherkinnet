@@ -20,20 +20,14 @@ namespace GherkinNet.Language
             => Parse(new StringReader(content), binders);
 
         public static GherkinDOM Parse(TextReader reader, SentenceBinder[] binders = null)
-            => new GherkinDOM()
-            {
-                Nodes = ParseLines(reader, binders).ToArray()
-            };
+            => new GherkinDOM(ParseLines(reader, binders).ToArray(), binders);
 
         public static async Task<GherkinDOM> ParseAsync(TextReader reader, SentenceBinder[] binders = null, CancellationToken? cancellationToken = null)
         {
             var nodes = await Task.Run(() => 
                 ParseLines(reader, binders, cancellationToken).ToArray(),cancellationToken??default(CancellationToken));
 
-            return new GherkinDOM()
-            {
-                Nodes = nodes
-            };
+            return new GherkinDOM(nodes, binders);
         }
 
         static IEnumerable<Node> ParseLines(TextReader reader, SentenceBinder[] binders = null, CancellationToken ? cancellationToken = null)

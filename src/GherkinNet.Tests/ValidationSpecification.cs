@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Xunit;
 using GherkinNet.Language;
 using System.IO;
+using GherkinNet.Language.Binding;
+using GherkinNet.Language.Nodes;
 
 namespace GherkinNet.Tests
 {
@@ -89,5 +91,27 @@ namespace GherkinNet.Tests
             errors.Should().HaveCount(1);
             errors.First().Message.Should().Contain("should have a sentence");
         }
+
+
+        [Fact(DisplayName = "Given an expression with wrong parameter count when validating show an error on the node using it")]
+        [Trait("binding", "validation")]
+        public static void binding_wrong_parameter_count_yields_error_on_validation()
+        {
+            string example = " given should be something";
+
+            var shouldbe_method = typeof(BinderHelperSpecification)
+                .GetMethod(nameof(ShouldBe), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+
+            //the expression lacks one parameter
+            var binding = BindingHelper.FromMethod(Nouns.given, "should be something", shouldbe_method);
+
+            var dom = GherkinParser.Parse(example, new[] { binding! });
+            var errors = dom.Validate();
+
+            errors.Should().HaveCount(1);
+            errors.First().Message.Should().Contain("should have the same parameter count");
+        }
+        static void ShouldBe(string something) { }
+
     }
 }
