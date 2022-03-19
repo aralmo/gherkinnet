@@ -3,6 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using GherkinNet.Language.Binding;
+using System.Linq;
+using System.ComponentModel;
 
 namespace GherkinNet.Language.Validation
 {
@@ -38,10 +41,35 @@ namespace GherkinNet.Language.Validation
             }
 
             if (error != null)
+            {
                 yield return new ValidationResult(sentence, $"Error validating the binder regular expression {error}");
-            else
-                if (regex.GetGroupNumbers().Length-1 != sentence.Binder.ParameterNames.Length)
-                    yield return new ValidationResult(sentence, $"binded expression should have the same parameter count");
+                yield break;
+            }
+            else if (regex.GetGroupNumbers().Length - 1 != sentence.Binder.ParameterNames.Length)
+            {
+                yield return new ValidationResult(sentence, $"binded expression should have the same parameter count");
+                yield break;
+            }
+            error = null;
+
+            //validate the parameters can be converted to their target types
+            var parameters = sentence.FetchParameters().ToArray();
+            for (int n = 0; n < parameters.Length; n++)
+            {
+                try
+                {
+                    var converter = TypeDescriptor
+                        .GetConverter(sentence.Binder.ParameterTypes[n])
+                        .ConvertFromString(parameters[n]);
+                }
+                catch (ArgumentException)
+                {
+                    error = $"{parameters[n]} can't be converted to {sentence.Binder.ParameterTypes[n].Name}";
+                }
+                if (error != null)
+                    yield return new ValidationResult(sentence, error);
+            }
+
         }
 
         internal static IEnumerable<ValidationResult> PendingSentenceRules(PendingSentence node)

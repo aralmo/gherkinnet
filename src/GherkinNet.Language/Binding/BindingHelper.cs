@@ -22,5 +22,16 @@ namespace GherkinNet.Language.Binding
                 RegularExpression = expression
             };
         }
+
+        public static IEnumerable<string> FetchParameters(this BindedSentence node)
+        {
+            if (node.Binder.ParameterTypes.Any()) 
+            {
+                var match = Regex.Match(node.Content, node.Binder.RegularExpression);
+                for (int i = 1; i < match.Groups.Count; i++)
+                    yield return match.Groups[i].Value;
+            }
+
+        }
     }
 }

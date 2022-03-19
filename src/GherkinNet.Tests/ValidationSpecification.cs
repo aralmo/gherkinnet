@@ -118,7 +118,7 @@ namespace GherkinNet.Tests
         {
             string example = " given should be something";
 
-            var shouldbe_method = typeof(BinderHelperSpecification)
+            var shouldbe_method = typeof(ValidationSpecification)
                 .GetMethod(nameof(ShouldBe), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
 
             var binding = BindingHelper.FromMethod(Nouns.given, "should be (.*)", shouldbe_method);
@@ -129,7 +129,57 @@ namespace GherkinNet.Tests
             errors.Should().BeEmpty();
         }
 
+        [Fact(DisplayName = "Given a wrong parameter value for the binded type an error is yielded")]
+        [Trait("binding", "validation")]
+        public static void binding_parameter_yields_error_when_cant_parse_to_type()
+        {
+            //no parameters
+            string example = " given should be something";
+
+            var shouldbe_method = typeof(ValidationSpecification)
+                    //we method withouth parameters
+                .GetMethod(nameof(binding_parameter_yields_error_when_cant_parse_to_type), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+
+            var binding = BindingHelper.FromMethod(Nouns.given, "should be something", shouldbe_method);
+
+            var dom = GherkinParser.Parse(example, new[] { binding! });
+            var errors = dom.Validate();
+
+            errors.Should().BeEmpty();
+
+            //correct parameters
+            //no parameters
+            example = " given should be 1";
+
+            shouldbe_method = typeof(ValidationSpecification)
+                .GetMethod(nameof(ShouldBeInt), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+
+            binding = BindingHelper.FromMethod(Nouns.given, "should be (.*)", shouldbe_method);
+
+            dom = GherkinParser.Parse(example, new[] { binding! });
+            errors = dom.Validate();
+
+            errors.Should().BeEmpty();
+
+            //wrong parameters
+
+            example = " given should be something";
+
+            shouldbe_method = typeof(ValidationSpecification)
+                .GetMethod(nameof(ShouldBeInt), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+
+            binding = BindingHelper.FromMethod(Nouns.given, "should be (.*)", shouldbe_method);
+
+            dom = GherkinParser.Parse(example, new[] { binding! });
+            errors = dom.Validate().ToArray();
+
+            errors.Should().HaveCount(1);
+            errors.First().Message.Should().Contain("can't be converted to Int32");
+
+        }
+
         static void ShouldBe(string something) { }
+        static void ShouldBeInt(int something) { }
 
     }
 }
