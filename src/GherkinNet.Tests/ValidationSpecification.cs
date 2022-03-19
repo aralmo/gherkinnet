@@ -56,5 +56,38 @@ namespace GherkinNet.Tests
             var errors = dom.Validate();
             errors.Should().BeEmpty();
         }
+
+        [Fact(DisplayName = "all nouns should be binded")]
+        [Trait("language", "validation")]
+        public void should_not_allow_pending_sentences()
+        {
+            string example
+                = @"
+                    scenario: some scenario
+                        when I do something
+                        then should get not binded error
+                   ";
+
+            var dom = GherkinParser.Parse(new StringReader(example));
+            var errors = dom.Validate();
+            errors.Should().HaveCount(2);
+            errors.Should().AllSatisfy(e => e.Message.Contains("should be binded"));
+        }
+
+        [Fact(DisplayName = "all nouns should have body")]
+        [Trait("language", "validation")]
+        public void should_not_allow_empty_nouns()
+        {
+            string example
+                = @"
+                    scenario: some scenario
+                        when 
+                   ";
+
+            var dom = GherkinParser.Parse(new StringReader(example));
+            var errors = dom.Validate();
+            errors.Should().HaveCount(1);
+            errors.First().Message.Should().Contain("should have a sentence");
+        }
     }
 }

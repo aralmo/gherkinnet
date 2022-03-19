@@ -21,7 +21,17 @@ namespace GherkinNet.Language
                     case SectionNode section:
                         foreach (var r in NodeRules.SectionRules(section))
                             yield return r;
-                    break;
+                        break;
+
+                    case NounNode noun:
+                        foreach (var r in NodeRules.NounRules(noun))
+                            yield return r;
+                        break;
+
+                    case PendingSentence sentence:
+                        foreach (var r in NodeRules.PendingSentenceRules(sentence))
+                            yield return r;
+                        break;
                 }
             }
         }

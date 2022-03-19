@@ -8,6 +8,7 @@ using GherkinNet.Language;
 using System.IO;
 using FluentAssertions;
 using GherkinNet.Language.Nodes;
+using System.Threading;
 
 namespace GherkinNet.Tests
 {
@@ -156,6 +157,24 @@ namespace GherkinNet.Tests
             nodes[3].Parent.Should().Be(nodes[0]);
             nodes[4].Should().BeOfType<PendingSentence>();
             nodes[4].Parent.Should().Be(nodes[3]);
+        }
+
+        [Fact(DisplayName = "Async parser stops parsing if cancellation was requested")]
+        [Trait("language", "parser")]
+        public void given_10_lines_parser_stops_on_cancellation_request()
+        {
+            var sb = new StringBuilder();
+            for (int n = 0; n < 10000; n++)
+                sb.AppendLine("a line \n");
+            string example = sb.ToString();
+
+            var source = new CancellationTokenSource();
+            var r = GherkinParser.ParseAsync(new StringReader(example), source.Token);
+            var awaiter = r.GetAwaiter();
+            source.Cancel();
+
+            var result = awaiter.GetResult();
+            result.Nodes.Should().HaveCountLessThan(10000);
         }
     }
 }
