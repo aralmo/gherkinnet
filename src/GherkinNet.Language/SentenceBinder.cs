@@ -9,6 +9,7 @@ namespace GherkinNet.Language.Nodes
     /// </summary>
     public class SentenceBinder
     {
+        public Nouns Noun;
         public string RegularExpression;
     }
 }

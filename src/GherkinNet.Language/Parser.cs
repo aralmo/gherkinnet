@@ -15,19 +15,19 @@ namespace GherkinNet.Language
         const string SECTIONS_REGEX = @"(?:\s*)?(background:|scenario:|feature:)(.*)(\r|\n)?";
         const string NOUNS_REGEX = @"(?:\s*)?(given|when|then) (.*)(\r|\n)?";
 
-        public static GherkinDOM Parse(string content)
-            => Parse(new StringReader(content));
+        public static GherkinDOM Parse(string content, SentenceBinder[] binders = null)
+            => Parse(new StringReader(content), binders);
 
-        public static GherkinDOM Parse(TextReader reader)
+        public static GherkinDOM Parse(TextReader reader, SentenceBinder[] binders = null)
             => new GherkinDOM()
             {
-                Nodes = ParseLines(reader).ToArray()
+                Nodes = ParseLines(reader, binders).ToArray()
             };
 
-        public static async Task<GherkinDOM> ParseAsync(TextReader reader, CancellationToken? cancellationToken = null)
+        public static async Task<GherkinDOM> ParseAsync(TextReader reader, SentenceBinder[] binders = null, CancellationToken? cancellationToken = null)
         {
             var nodes = await Task.Run(() => 
-                ParseLines(reader, cancellationToken).ToArray(),cancellationToken??default(CancellationToken));
+                ParseLines(reader, binders, cancellationToken).ToArray(),cancellationToken??default(CancellationToken));
 
             return new GherkinDOM()
             {
@@ -35,7 +35,7 @@ namespace GherkinNet.Language
             };
         }
 
-        static IEnumerable<Node> ParseLines(TextReader reader, CancellationToken? cancellationToken = null)
+        static IEnumerable<Node> ParseLines(TextReader reader, SentenceBinder[] binders = null, CancellationToken ? cancellationToken = null)
         {            
             SectionNode section = null;
             string line = reader.ReadLine();
@@ -56,7 +56,7 @@ namespace GherkinNet.Language
                         bool isnoun = false;
                         //features only accept text
                         if (section?.Type != Sections.feature)
-                            foreach (var node in parseNoun(line, pos, section))
+                            foreach (var node in parseNoun(line, pos, section, binders))
                             {
                                 isnoun = true;
                                 yield return node;
@@ -78,7 +78,7 @@ namespace GherkinNet.Language
 
         }
 
-        private static IEnumerable<Node> parseNoun(string line, int posOffset, SectionNode section)
+        private static IEnumerable<Node> parseNoun(string line, int posOffset, SectionNode section, SentenceBinder[] binders)
         {
             var match = Regex.Match(line, NOUNS_REGEX);
             if (match.Success)
@@ -94,22 +94,45 @@ namespace GherkinNet.Language
                 bool hasSentence = !string.IsNullOrWhiteSpace(match.Groups[2].Value);
                 
                 if (hasSentence)//parse and bind changes the noun, better to yield after
-                    parseAndBindNounSentence(posOffset, noun, match);
+                    parseAndBindNounSentence(posOffset, noun, match, binders);
 
                 yield return noun;
                 if (hasSentence)
                     yield return noun.Sentence;
             }
         }
-        static void parseAndBindNounSentence(int posOffset, NounNode noun, Match match)
+        static void parseAndBindNounSentence(int posOffset, NounNode noun, Match match, SentenceBinder[] binders)
         {
-            var sentence = new PendingSentence()
+            SentenceNode sentence = null;
+            string content = match.Groups[2].Value;
+
+            var matchingBinder = binders?
+                .Where(binder => binder.Noun == noun.Noun)
+                .FirstOrDefault(binder => Regex.IsMatch(content, binder.RegularExpression));
+
+            if (matchingBinder != null)
             {
-                Parent = noun,
-                SourceIndex = match.Groups[2].Index + posOffset,
-                SourceLength = match.Groups[2].Length,
-                Content = match.Groups[2].Value
-            };
+                sentence = new BindedSentence()
+                {
+                    Parent = noun,
+                    SourceIndex = match.Groups[2].Index + posOffset,
+                    SourceLength = match.Groups[2].Length,
+                    Content = content,
+                    Binder = matchingBinder
+                };
+            }
+            else
+            {
+                sentence = new PendingSentence()
+                {
+                    Parent = noun,
+                    SourceIndex = match.Groups[2].Index + posOffset,
+                    SourceLength = match.Groups[2].Length,
+                    Content = content
+                };
+            }
+
+
             noun.Sentence = sentence;
         }
         private static bool tryParseSection(string line, int posOffset, out SectionNode section)

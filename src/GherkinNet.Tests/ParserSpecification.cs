@@ -169,12 +169,89 @@ namespace GherkinNet.Tests
             string example = sb.ToString();
 
             var source = new CancellationTokenSource();
-            var r = GherkinParser.ParseAsync(new StringReader(example), source.Token);
+            var r = GherkinParser.ParseAsync(new StringReader(example), null, source.Token);
             var awaiter = r.GetAwaiter();
             source.Cancel();
 
             var result = awaiter.GetResult();
             result.Nodes.Should().HaveCountLessThan(10000);
+        }
+
+        [Fact(DisplayName = "Parser parses a correct binded sentence when given")]
+        [Trait("language", "parser")]
+        public void given_valid_match_parsed_binded_sentence()
+        {
+            string example
+            = @"
+                    scenario:some scenarioname
+                        given something we have
+                        when we do something
+                        then we have a result
+                   ";
+
+            var dom = GherkinParser.Parse(example, new SentenceBinder[]
+            {
+                new SentenceBinder()
+                {
+                    Noun = Nouns.given,
+                    RegularExpression = "(.*) we have"
+                },
+                new SentenceBinder()
+                {
+                    Noun = Nouns.when,
+                    RegularExpression = "we do (.*)"
+                },
+                new SentenceBinder()
+                {
+                    Noun = Nouns.then,
+                    RegularExpression = "we have (.*)"
+                }
+            });
+
+            var nodes = dom.Nodes;
+            nodes.Should().AllSatisfy(node => node.Should().NotBeOfType<PendingSentence>());
+        }
+
+
+        [Fact(DisplayName = "Parser selects the binded sentence according to the noun")]
+        [Trait("language", "parser")]
+        public void given_multiple_options_selects_bind_for_noun()
+        {
+            string example
+            = @"
+                    scenario:some scenarioname
+                        given something
+                        when something
+                        then something
+                   ";
+
+            var binders = new SentenceBinder[]
+            {
+                new SentenceBinder()
+                {
+                    Noun = Nouns.given,
+                    RegularExpression = "something"
+                },
+                new SentenceBinder()
+                {
+                    Noun = Nouns.when,
+                    RegularExpression = "something"
+                },
+                new SentenceBinder()
+                {
+                    Noun = Nouns.then,
+                    RegularExpression = "something"
+                }
+            };
+            var dom = GherkinParser.Parse(example, binders);
+
+            var nodes = dom.Nodes.Where(n => n is SentenceNode).ToArray();
+            nodes.Should().AllBeOfType<BindedSentence>();
+            nodes.Should().HaveCount(3);
+
+            nodes.Select<Node, BindedSentence>(n => n as BindedSentence).Should()
+                .AllSatisfy(node => node.Binder.Noun.Should().Be((node.Parent as NounNode).Noun));
+
         }
     }
 }
