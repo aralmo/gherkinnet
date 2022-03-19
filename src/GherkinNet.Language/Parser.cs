@@ -74,10 +74,14 @@ namespace GherkinNet.Language
                     Noun = (Nouns)Enum.Parse(typeof(Nouns),match.Groups[1].Value)
                 };
 
-                parseAndBindNounSentence(posOffset, noun, match);
+                bool hasSentence = !string.IsNullOrWhiteSpace(match.Groups[2].Value);
+                
+                if (hasSentence)//parse and bind changes the noun, better to yield after
+                    parseAndBindNounSentence(posOffset, noun, match);
 
                 yield return noun;
-                yield return noun.Sentence;
+                if (hasSentence)
+                    yield return noun.Sentence;
             }
         }
 
