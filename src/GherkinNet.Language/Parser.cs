@@ -32,6 +32,9 @@ namespace GherkinNet.Language
 
         static IEnumerable<Node> ParseLines(TextReader reader, SentenceBinder[] binders = null, CancellationToken? cancellationToken = null)
         {
+
+            //ToDo: needs refactor
+
             SectionNode section = null;
 
             foreach (var parsedLine in ParseTextLines(reader))

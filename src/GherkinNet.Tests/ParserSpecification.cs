@@ -258,12 +258,10 @@ namespace GherkinNet.Tests
         public void given_a_change_the_dom_updates_correctly()
         {
             string example
-            = @"
-                    scenario:some scenarioname
+            = @"scenario:some scenarioname
                         given something
                         when something
-                        then something
-                   ";
+                        then something";
 
             var binders = new SentenceBinder[]
             {
@@ -294,7 +292,7 @@ namespace GherkinNet.Tests
 
             dom.Apply("given crap", example.IndexOf("given"), "given something".Length);
 
-            (dom.Nodes[2] as NounNode).Sentence.Should().BeOfType<PendingSentence>();
+            (dom.Nodes[1] as NounNode).Sentence.Should().BeOfType<PendingSentence>();
         }
 
         [Fact(DisplayName = "Given a script the sourceindex on the parsed nodes should be correct")]

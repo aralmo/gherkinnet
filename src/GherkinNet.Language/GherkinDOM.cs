@@ -51,9 +51,11 @@ namespace GherkinNet.Language
             }
         }
 
+
         public void Apply(string code, int sourceIndex, int sourceLength)
         {
 
+        //ToDo: needs refactor
             var newParsed = GherkinParser.Parse(code,SentenceBinders);
             int endIndex = sourceIndex + sourceLength;
             
