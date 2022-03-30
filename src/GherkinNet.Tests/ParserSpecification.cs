@@ -208,7 +208,6 @@ namespace GherkinNet.Tests
                     binded.Binder.ParameterTypes[0].Should().Be(typeof(string));
                 }
             });
-
         }
         static void testMethod(string parameter) { }
 
@@ -296,6 +295,8 @@ namespace GherkinNet.Tests
             (dom.Nodes[1] as NounNode).Sentence.Should().BeOfType<PendingSentence>();
             dom.Nodes[1].SourceIndex.Should().Be(currentindex, "the start position hasn't changed");
             dom.Nodes.Last().SourceIndex.Should().Be(lastindex-5, "the new source is 5 characters shorter than the original");
+            dom.Nodes[1].Parent.Should().Be(dom.Nodes[0], "should be parented to the current nodes section");
+            dom.Nodes[2].Parent.Should().Be(dom.Nodes[1], "new node sentence should be correctly binded");
         }
 
         [Fact(DisplayName = "Given a script the sourceindex on the parsed nodes should be correct")]
@@ -309,53 +310,6 @@ namespace GherkinNet.Tests
             dom.Nodes[0].SourceIndex.Should().Be(2);
             dom.Nodes[1].SourceIndex.Should().Be(7);
             dom.Nodes[2].SourceIndex.Should().Be(14);
-        }
-
-        [Fact]
-        public void line_parser_poc()
-        {
-            var example = "this is a line\nandanother\r\nathirdone";
-            var result = ParseTextLines(new StringReader(example)).ToArray();
-            result[0].line.Should().Be("this is a line");
-            result[0].position.Should().Be(0);
-            result[1].line.Should().Be("andanother");
-            result[1].position.Should().Be(example.IndexOf("and"));
-            result[2].line.Should().Be("athirdone");
-            result[2].position.Should().Be(example.IndexOf("athirdone"));
-            
-            result.Should().HaveCount(3);
-        }
-
-        const int MAX_LINE_LENGTH = 2048;
-        private static IEnumerable<(string line, int position)> ParseTextLines(TextReader reader)
-        {
-            var c = reader.Read();
-            char[] line_buffer = new char[MAX_LINE_LENGTH];
-            int pos = 0;
-            int line_start = 0;
-            int length = 0;
-            Func<(string, int)> currentLine = () => (new string(line_buffer, 0, length).TrimEnd('\r'), line_start);
-
-            while (c > -1)
-            {
-                if (c == '\n')
-                {
-                    yield return currentLine();
-                    line_start = pos + 1;
-                    length = 0;
-                }
-                else
-                {
-                    length++;
-                    line_buffer[pos - line_start] = (char)c;
-                }
-
-                pos++;
-                c = reader.Read();
-            }
-
-            if (length > 0)
-                yield return currentLine();
         }
     }
 }
