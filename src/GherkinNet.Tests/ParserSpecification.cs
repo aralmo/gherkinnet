@@ -10,6 +10,7 @@ using FluentAssertions;
 using GherkinNet.Language.Nodes;
 using System.Threading;
 using GherkinNet.Language.Binding;
+using System.Text.RegularExpressions;
 
 namespace GherkinNet.Tests
 {
@@ -20,11 +21,9 @@ namespace GherkinNet.Tests
         public void given_some_sections_parser_should_return_dom()
         {
             string example
-                = @"
-                    feature:feature name
+                = @"feature:feature name
                     background: background name
-                    scenario: scenario name
-                   ";
+                    scenario: scenario name";
 
             var dom = GherkinParser.Parse(example);
             dom.Nodes.Count().Should().Be(3);
@@ -44,12 +43,10 @@ namespace GherkinNet.Tests
         public void given_feature_section_and_sometext_we_get_correct_dom()
         {
             string example
-                = @"
-                    feature:feature name
+                = @"feature:feature name
                         this is just text
                         more explanatory text                    
-                        yet more comments                    
-                   ";
+                        yet more comments";
 
             var dom = GherkinParser.Parse(new StringReader(example));
             dom.Nodes.Count().Should().Be(4);
@@ -178,7 +175,7 @@ namespace GherkinNet.Tests
             result.Nodes.Should().HaveCountLessThan(10000);
         }
 
-        [Fact(DisplayName = "Parser parses a correct binded sentence when given")]
+        [Fact(DisplayName = "Parser parses a correctly binded sentence and arguments when given")]
         [Trait("language", "parser")]
         public void given_valid_match_parsed_binded_sentence()
         {
@@ -189,30 +186,31 @@ namespace GherkinNet.Tests
                         when we do something
                         then we have a result
                    ";
-
+            var methodinfo = typeof(ParserSpecification).GetMethod(nameof(testMethod), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
             var dom = GherkinParser.Parse(example, new SentenceBinder[]
             {
-                new SentenceBinder()
-                {
-                    Noun = Nouns.given,
-                    RegularExpression = "(.*) we have"
-                },
-                new SentenceBinder()
-                {
-                    Noun = Nouns.when,
-                    RegularExpression = "we do (.*)"
-                },
-                new SentenceBinder()
-                {
-                    Noun = Nouns.then,
-                    RegularExpression = "we have (.*)"
-                }
+                BindingHelper.FromMethod(Nouns.given,"(.*) we have",methodinfo),
+                BindingHelper.FromMethod(Nouns.when,"we do (.*)",methodinfo),
+                BindingHelper.FromMethod(Nouns.then,"we have (.*)",methodinfo)
             });
 
             var nodes = dom.Nodes;
             nodes.Should().AllSatisfy(node => node.Should().NotBeOfType<PendingSentence>());
-        }
+            nodes.Where(n => n is BindedSentence).Should().HaveCount(3);
+            nodes.Where(n => n is BindedSentence).Should().AllSatisfy(node =>
+            {
+                Assert.IsType<BindedSentence>(node);
+                var binded = node as BindedSentence;
+                if (binded! != null)
+                {
+                    binded.Binder.ParameterTypes.Should().HaveCount(1);
+                    binded.Binder.ParameterNames.Should().HaveCount(1);
+                    binded.Binder.ParameterTypes[0].Should().Be(typeof(string));
+                }
+            });
 
+        }
+        static void testMethod(string parameter) { }
 
         [Fact(DisplayName = "Parser selects the binded sentence according to the noun")]
         [Trait("language", "parser")]
@@ -253,6 +251,110 @@ namespace GherkinNet.Tests
             nodes.Select<Node, BindedSentence>(n => (n as BindedSentence)!).Should()
                 .AllSatisfy(node => node.Binder.Noun.Should().Be((node.Parent as NounNode)!.Noun));
 
+        }
+
+        [Fact(DisplayName = "When sending a change to a DOM object the parser correctly applies changes to the nodes.")]
+        [Trait("language", "parser")]
+        public void given_a_change_the_dom_updates_correctly()
+        {
+            string example
+            = @"
+                    scenario:some scenarioname
+                        given something
+                        when something
+                        then something
+                   ";
+
+            var binders = new SentenceBinder[]
+            {
+                new SentenceBinder()
+                {
+                    Noun = Nouns.given,
+                    RegularExpression = "something"
+                },
+                new SentenceBinder()
+                {
+                    Noun = Nouns.when,
+                    RegularExpression = "something"
+                },
+                new SentenceBinder()
+                {
+                    Noun = Nouns.then,
+                    RegularExpression = "something"
+                }
+            };
+            var dom = GherkinParser.Parse(example, binders);
+
+            //assert the  first state is correct
+            var nodes = dom.Nodes.Where(n => n is SentenceNode).ToArray();
+            nodes.Should().AllBeOfType<BindedSentence>();
+            nodes.Should().HaveCount(3);
+            nodes.Select<Node, BindedSentence>(n => (n as BindedSentence)!).Should()
+                .AllSatisfy(node => node.Binder.Noun.Should().Be((node.Parent as NounNode)!.Noun));
+
+            dom.Apply("given crap", example.IndexOf("given"), "given something".Length);
+
+            (dom.Nodes[2] as NounNode).Sentence.Should().BeOfType<PendingSentence>();
+        }
+
+        [Fact(DisplayName = "Given a script the sourceindex on the parsed nodes should be correct")]
+        [Trait("language", "parser")]
+        public void given_a_script_nodes_parse_correct_source_index()
+        {
+            string example = "\r\ntext\ntext2\r\ntext3";
+
+            var dom = GherkinParser.Parse(example);
+
+            dom.Nodes[0].SourceIndex.Should().Be(2);
+            dom.Nodes[1].SourceIndex.Should().Be(7);
+            dom.Nodes[2].SourceIndex.Should().Be(14);
+        }
+
+        [Fact]
+        public void line_parser_poc()
+        {
+            var example = "this is a line\nandanother\r\nathirdone";
+            var result = ParseTextLines(new StringReader(example)).ToArray();
+            result[0].line.Should().Be("this is a line");
+            result[0].position.Should().Be(0);
+            result[1].line.Should().Be("andanother");
+            result[1].position.Should().Be(example.IndexOf("and"));
+            result[2].line.Should().Be("athirdone");
+            result[2].position.Should().Be(example.IndexOf("athirdone"));
+            
+            result.Should().HaveCount(3);
+        }
+
+        const int MAX_LINE_LENGTH = 2048;
+        private static IEnumerable<(string line, int position)> ParseTextLines(TextReader reader)
+        {
+            var c = reader.Read();
+            char[] line_buffer = new char[MAX_LINE_LENGTH];
+            int pos = 0;
+            int line_start = 0;
+            int length = 0;
+            Func<(string, int)> currentLine = () => (new string(line_buffer, 0, length).TrimEnd('\r'), line_start);
+
+            while (c > -1)
+            {
+                if (c == '\n')
+                {
+                    yield return currentLine();
+                    line_start = pos + 1;
+                    length = 0;
+                }
+                else
+                {
+                    length++;
+                    line_buffer[pos - line_start] = (char)c;
+                }
+
+                pos++;
+                c = reader.Read();
+            }
+
+            if (length > 0)
+                yield return currentLine();
         }
     }
 }

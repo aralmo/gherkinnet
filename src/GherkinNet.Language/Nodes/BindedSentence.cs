@@ -1,4 +1,5 @@
-﻿using GherkinNet.Language.Binding;
+﻿using System;
+using GherkinNet.Language.Binding;
 
 namespace GherkinNet.Language.Nodes
 {
@@ -7,6 +8,6 @@ namespace GherkinNet.Language.Nodes
     /// </summary>
     public class BindedSentence : SentenceNode
     {
-        public SentenceBinder Binder { get; set; }
+        public SentenceBinder Binder;
     }
 }

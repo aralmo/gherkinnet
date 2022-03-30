@@ -92,7 +92,6 @@ namespace GherkinNet.Tests
             errors.First().Message.Should().Contain("should have a sentence");
         }
 
-
         [Fact(DisplayName = "Given an expression with wrong parameter count when validating show an error on the node using it")]
         [Trait("binding", "validation")]
         public static void binding_wrong_parameter_count_yields_error_on_validation()

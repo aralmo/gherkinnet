@@ -2,6 +2,7 @@
 using GherkinNet.Language.Nodes;
 using GherkinNet.Language.Validation;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -50,5 +51,37 @@ namespace GherkinNet.Language
             }
         }
 
+        public void Apply(string code, int sourceIndex, int sourceLength)
+        {
+
+            var newParsed = GherkinParser.Parse(code,SentenceBinders);
+            int endIndex = sourceIndex + sourceLength;
+            
+            List<Node> result = new List<Node>();
+            bool replacing = false;
+            for (int i = 0; i < Nodes.Length; i++)
+            {
+                if (Nodes[i].SourceIndex >= sourceIndex && Nodes[i].SourceIndex < endIndex)
+                {
+                    //node needs to change and if first inject the compiled code
+                    replacing = true;
+                    //do not add this node
+                    continue;
+                }
+                else
+                {
+                    if (replacing)
+                    {
+                        //add the new nodes here
+                        result.AddRange(newParsed.Nodes);
+                        replacing = false;
+                    }
+                }
+
+                result.Add(Nodes[i]);
+            }
+
+            Nodes = result.ToArray();
+        }
     }
 }
