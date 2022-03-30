@@ -289,10 +289,13 @@ namespace GherkinNet.Tests
             nodes.Should().HaveCount(3);
             nodes.Select<Node, BindedSentence>(n => (n as BindedSentence)!).Should()
                 .AllSatisfy(node => node.Binder.Noun.Should().Be((node.Parent as NounNode)!.Noun));
-
+            int lastindex = dom.Nodes.Last().SourceIndex;
+            int currentindex = dom.Nodes[1].SourceIndex;
             dom.Apply("given crap", example.IndexOf("given"), "given something".Length);
 
             (dom.Nodes[1] as NounNode).Sentence.Should().BeOfType<PendingSentence>();
+            dom.Nodes[1].SourceIndex.Should().Be(currentindex, "the start position hasn't changed");
+            dom.Nodes.Last().SourceIndex.Should().Be(lastindex-5, "the new source is 5 characters shorter than the original");
         }
 
         [Fact(DisplayName = "Given a script the sourceindex on the parsed nodes should be correct")]

@@ -51,14 +51,18 @@ namespace GherkinNet.Language
             }
         }
 
-
+        //ToDo:would like this to be returning a new dom instead but parent references prevent it
         public void Apply(string code, int sourceIndex, int sourceLength)
         {
 
-        //ToDo: needs refactor
+        //ToDo: needs refactor enumerable etc.
             var newParsed = GherkinParser.Parse(code,SentenceBinders);
+            foreach (var n in newParsed.Nodes)
+                n.SourceIndex += sourceIndex;
+
             int endIndex = sourceIndex + sourceLength;
-            
+            int sizeDelta = code.Length - sourceLength;
+            bool afterReplacing = false;
             List<Node> result = new List<Node>();
             bool replacing = false;
             for (int i = 0; i < Nodes.Length; i++)
@@ -77,8 +81,12 @@ namespace GherkinNet.Language
                         //add the new nodes here
                         result.AddRange(newParsed.Nodes);
                         replacing = false;
+                        afterReplacing = true;
                     }
                 }
+
+                if (afterReplacing)
+                    Nodes[i].SourceIndex += sizeDelta;
 
                 result.Add(Nodes[i]);
             }
